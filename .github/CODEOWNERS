@@ -1,0 +1,5 @@
+# Gated process folders: a change here needs the lead's review.
+/docs/product/   @atgoldberg
+/docs/design/    @atgoldberg
+/docs/user/      @atgoldberg
+/docs/tutorials/ @atgoldberg

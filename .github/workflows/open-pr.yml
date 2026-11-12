@@ -1,0 +1,32 @@
+# Opens a pull request for an agent's branch under the rfr-agent App's identity and turns on
+# auto-merge, so the person who owns the agent's credentials can give it an approving review.
+name: open-pr
+on:
+  push:
+    branches: ['claude/**', 'phase-*/**', 'feature/**']
+permissions:
+  contents: read
+concurrency:
+  group: open-pr-${{ github.ref }}
+jobs:
+  open:
+    runs-on: ubuntu-latest
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.RFR_APP_ID }}
+          private-key: ${{ secrets.RFR_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+      - name: Open the pull request and turn on auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          number=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -z "$number" ]; then
+            title=$(git log -1 --format=%s)
+            gh pr create --head "$BRANCH" --base main --title "$title" --body "Opened by rfr-agent for branch \`$BRANCH\`."
+            number=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+          fi
+          gh pr merge "$number" --auto --merge
